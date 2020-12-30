@@ -12,8 +12,10 @@ from utils.result_record import *
 from models.model import *
 from torch.nn import NLLLoss
 import matplotlib.pyplot as plt
+from torch.utils.tensorboard import SummaryWriter
 import os
 
+writer = SummaryWriter(log_dir='tensorboard')
 speaker = SpeakingAgent().to(DEVICE)
 listener = ListeningAgent().to(DEVICE)
 spk_optimizer = OPTIMISER(speaker.parameters(), lr=LEARNING_RATE)
@@ -241,6 +243,12 @@ for i in range(args.max_gen):
 
         if Ig_cnt%500==1:
             print('Gen.%d ==PhaseB==Round %d, rwd (%d, %d), spk_loss %.4f, lis_loss %.4f'%(i,Ig_cnt,reward, rwd_avg20, spk_loss, lis_loss))
+            loss_dict = {'spk_loss_gen_'+str(i):spk_loss,
+                         'lis_loss_gen_'+str(i):lis_loss}
+            reward_dict = {'reward_gen_'+str(i):reward,
+                           'reward_avg20_gen_'+str(i):rwd_avg20}
+            writer.add_scalars('Loss_PhaseB',loss_dict,Ig_cnt)
+            writer.add_scalars('Reward_PhaseB',reward_dict,Ig_cnt)
             all_msgs = msg_generator(speaker, all_list, vocab_table_full, padding=True)
             msg_types.append(len(set(all_msgs.values())))
             comp_p, comp_s = compos_cal(all_msgs)
@@ -282,9 +290,11 @@ for i in range(args.max_gen):
         acc = train_phaseA(speaker, spk_optimizer, data_for_spk)
         acc_avg20 = (1-0.05)*acc_avg20 + 0.05*acc
     print('Gen.%d @@PhaseA@@, round is %d, acc is %.4f, acc_avg20 is %.4f'%(i,Ia_cnt, acc,acc_avg20))
-    print(comp_ps[-1])
-
-
+    print('topsim: %f'%comp_ps[-1])
+    acc_dict = {'acc_gen_' + str(i): acc,
+                 'acc_avg20_gen_' + str(i): acc_avg20}
+    writer.add_scalars('Acc_PhaseA', acc_dict, Ia_cnt)
+    writer.add_scalar('topsim_phase_a_gen_'+str(i),comp_ps[-1])
 
 if not os.path.exists('exp_results'):
     os.mkdir('exp_results')
@@ -298,3 +308,5 @@ np.save(save_path+'msg_types.npy',np.asarray(msg_types))
 #np.save(save_path+'comp_generations', np.asarray(comp_generations))
 np.save(save_path+'valid_accs', np.asarray(valid_accs))
 msg_print_to_file(max_msg_all, save_path)
+print('comp_ps array:')
+print(comp_ps)
