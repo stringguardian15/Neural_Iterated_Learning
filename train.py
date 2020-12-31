@@ -257,6 +257,7 @@ for i in range(args.max_gen):
             if comp_p>=max_comp:
                 max_comp = comp_p
                 max_msg_all = all_msgs
+            writer.add_scalars('topsim_phaseB',{'generation_'+str(Ig_cnt):comp_p},Ig_cnt)
 
     # ====================== Calculate Validation Score ===========================
     for val in range(200):
@@ -293,8 +294,8 @@ for i in range(args.max_gen):
     print('topsim: %f'%comp_ps[-1])
     acc_dict = {'acc_gen_' + str(i): acc,
                  'acc_avg20_gen_' + str(i): acc_avg20}
-    writer.add_scalars('Acc_PhaseA', acc_dict, Ia_cnt)
-    writer.add_scalar('topsim_phase_a_gen_'+str(i),comp_ps[-1])
+    writer.add_scalars('Acc_PhaseA_by_gen', acc_dict, i)
+    writer.add_scalar('Topsim_PhaseA_by_gen',comp_ps[-1],i)
 
 if not os.path.exists('exp_results'):
     os.mkdir('exp_results')
